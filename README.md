@@ -139,6 +139,32 @@ histogram_quantile(0.95, sum by (le, uri) (rate(http_server_requests_seconds_buc
 Running the app outside Compose still exposes `/actuator/prometheus`; only the
 Prometheus server itself is Compose-provided.
 
+## Row-contention load tests
+
+`k6/hotproduct.js` sends one order per virtual user as a burst;
+`k6/sustained-hot-product.js` sends orders continuously for 30 seconds. Both target
+one product so concurrent orders contend on the same inventory row. Set `VUS`
+above 1 to exercise contention. Both fail the run if any order-creation check
+fails (every response must be HTTP `201`).
+
+Start a separate copy of the app, PostgreSQL, and Prometheus for manual testing:
+
+```sh
+docker compose -p order-platform-loadtest -f compose.load-test.yaml up --build -d
+docker compose -p order-platform-loadtest -f compose.load-test.yaml logs -f seed
+```
+
+Wait for `Load-test environment ready`. Setup prints the actual product ID and
+seeds one billion inventory units. The test app is at `http://localhost:8081`,
+PostgreSQL at `localhost:5433`, and Prometheus at `http://localhost:9091`.
+Restarts preserve the product and remaining stock. Run k6 yourself using
+`ORDER_URL=http://localhost:8081/orders` and the printed `PRODUCT_ID`.
+
+See [the load-test guide](k6/README.md) for script commands and the manual reset
+command. The standalone Compose project uses separate data volumes; test orders
+remain there until you delete those volumes. It does not run tests or clean up
+automatically.
+
 ## Project structure
 
 ```text
