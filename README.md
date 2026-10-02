@@ -147,23 +147,21 @@ one product so concurrent orders contend on the same inventory row. Set `VUS`
 above 1 to exercise contention. Both fail the run if any order-creation check
 fails (every response must be HTTP `201`).
 
-Start a separate copy of the app, PostgreSQL, and Prometheus for manual testing:
+Start the app, PostgreSQL, and Prometheus using the existing Compose stack:
 
 ```sh
-docker compose -p order-platform-loadtest -f compose.load-test.yaml up --build -d
-docker compose -p order-platform-loadtest -f compose.load-test.yaml logs -f seed
+docker compose up --build -d
 ```
 
-Wait for `Load-test environment ready`. Setup prints the actual product ID and
-seeds one billion inventory units. The test app is at `http://localhost:8081`,
-PostgreSQL at `localhost:5433`, and Prometheus at `http://localhost:9091`.
-Restarts preserve the product and remaining stock. Run k6 yourself using
-`ORDER_URL=http://localhost:8081/orders` and the printed `PRODUCT_ID`.
+The app is at `http://localhost:8080`, PostgreSQL at `localhost:5432`, and
+Prometheus at `http://localhost:9090`. Create a product and set its inventory
+through the API before testing, then run k6 using
+`ORDER_URL=http://localhost:8080/orders` and the returned `PRODUCT_ID`.
 
-See [the load-test guide](k6/README.md) for script commands and the manual reset
-command. The standalone Compose project uses separate data volumes; test orders
-remain there until you delete those volumes. It does not run tests or clean up
-automatically.
+See [the load-test guide](k6/README.md) for product setup, script commands, and
+reset instructions. Load tests use the development database: orders persist and
+inventory is consumed between runs. There is no automatic seeding, test execution,
+or cleanup.
 
 ## Project structure
 
